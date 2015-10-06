@@ -3,13 +3,15 @@
 clear all
 close all
 
-beta=0.99; %index
+format long g
+
+beta=0.995; %index
 nu=1; %skewness
 % u=5;
 % gamma = (u*cos(pi*beta/2))^(1/beta); %scale parameter
 delta=0; %location parameter
 
-t=1; %time
+t=10; %time
 
 % Monte Carlo simulation
 
@@ -19,8 +21,7 @@ N=10000;
 
 num=zeros(1,N);
 
-for k=1:N
-k
+parfor k=1:N
 dt=mlrnd(beta,gamma_t,1,100000);
 
 time=cumsum(dt);
@@ -33,7 +34,7 @@ end
 
 %building the histogram
 
-for j=1:max(num)
+parfor j=1:max(num)
     freq(j)=length(find(num==j-1))/N;
 end
 
@@ -41,29 +42,30 @@ end
 
 prob0 = mlf(beta,1,-t^beta,5); %probability for n=0
 
-for n=1:(max(num)-1) %number of events
-    n
-% 
-% stable = stblcdf(t,beta,nu,gamma,delta);
-% 
-% plot(t,stable)
+BigN = max(num)
 
-% fun = @(u) stblcdf(t,beta,nu,(u.*cos(pi*beta/2)).^(1/beta),delta)*(exp(-u).*u.^(n-1)/factorial(n-1) - exp(-u).*u.^n/factorial(n));
-% prob = integral(fun,0.0001,Inf);
+parfor n=1:(max(num)-1) %number of events
+    %   
+    % stable = stblcdf(t,beta,nu,gamma,delta);
+    % 
+    % plot(t,stable)
 
-du=0.01;
-int=0;
+    % fun = @(u) stblcdf(t,beta,nu,(u.*cos(pi*beta/2)).^(1/beta),delta)*(exp(-u).*u.^(n-1)/factorial(n-1) - exp(-u).*u.^n/factorial(n));
+    % prob = integral(fun,0.0001,Inf);
+    
+    du=0.01;
+    int=0;
 
-% for i=0:100000
-%     int= int + du*stblcdf(t,beta,nu,(i*du*cos(pi*beta/2))^(1/beta),delta)*(exp(-i*du)*(i*du)^(n-1)/factorial(n-1) - exp(-i*du)*(i*du)^n/factorial(n));
-% end
+    % for i=0:100000
+    %     int= int + du*stblcdf(t,beta,nu,(i*du*cos(pi*beta/2))^(1/beta),delta)*(exp(-i*du)*(i*du)^(n-1)/factorial(n-1) - exp(-i*du)*(i*du)^n/factorial(n));
+    % end
+    
+    for i=0:100000
+        int= int + du*stblcdf(t,beta,nu,(i*du*cos(pi*beta/2))^(1/beta),delta)*exp(-i*du)*(i*du)^(n-1)/factorial(n-1)*((n-i*du)/n);
+    end
 
-for i=0:100000
-    int= int + du*stblcdf(t,beta,nu,(i*du*cos(pi*beta/2))^(1/beta),delta)*exp(-i*du)*(i*du)^(n-1)/factorial(n-1)*((n-i*du)/n);
-end
-
-prob(n)=int;
-probpoiss(n) = poisspdf(n,t);
+    prob(n)=int;
+    probpoiss(n) = poisspdf(n,t);
 end
 
 prob=[prob0 prob];save
