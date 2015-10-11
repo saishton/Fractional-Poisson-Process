@@ -44,7 +44,10 @@ prob0 = mlf(beta,1,-t^beta,5); %probability for n=0
 
 BigN = max(num)
 
-for n=1:(max(num)-1) %number of events
+prob = zeros(1,BigN-1);
+probpoiss = zeros(1,BigN-1);
+
+for n=1:(BigN-1) %number of events
     %   
     % stable = stblcdf(t,beta,nu,gamma,delta);
     % 
