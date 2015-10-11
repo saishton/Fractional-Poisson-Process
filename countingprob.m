@@ -11,7 +11,7 @@ nu=1; %skewness
 % gamma = (u*cos(pi*beta/2))^(1/beta); %scale parameter
 delta=0; %location parameter
 
-t=10; %time
+t=1; %time
 
 % Monte Carlo simulation
 
@@ -44,7 +44,7 @@ prob0 = mlf(beta,1,-t^beta,5); %probability for n=0
 
 BigN = max(num)
 
-parfor n=1:(max(num)-1) %number of events
+for n=1:(max(num)-1) %number of events
     %   
     % stable = stblcdf(t,beta,nu,gamma,delta);
     % 
@@ -60,10 +60,10 @@ parfor n=1:(max(num)-1) %number of events
     %     int= int + du*stblcdf(t,beta,nu,(i*du*cos(pi*beta/2))^(1/beta),delta)*(exp(-i*du)*(i*du)^(n-1)/factorial(n-1) - exp(-i*du)*(i*du)^n/factorial(n));
     % end
     
-    for i=0:100000
+    parfor i=0:100000
         int= int + du*stblcdf(t,beta,nu,(i*du*cos(pi*beta/2))^(1/beta),delta)*exp(-i*du)*(i*du)^(n-1)/factorial(n-1)*((n-i*du)/n);
     end
-
+    
     prob(n)=int;
     probpoiss(n) = poisspdf(n,t);
 end
@@ -77,6 +77,10 @@ plot(x,prob,'o')
 hold on
 plot(x,probpoiss,'or')
 plot(x,freq,'x')
+
+
+filename = ['output-',datestr(now,'yyyymmddTHHMMSS'),'.png'];
+print(filename,'-dpng')
 
 % for i=1:1000
 % funct(i) = stblcdf(t,beta,nu,(i*du*cos(pi*beta/2))^(1/beta),delta)*(exp(-i*du)*(i*du)^(n-1)/factorial(n-1) - exp(-i*du)*(i*du)^n/factorial(n));
