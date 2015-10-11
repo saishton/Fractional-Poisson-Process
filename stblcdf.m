@@ -128,7 +128,7 @@ elseif abs(alpha - 1) > 1e-5         % Gen. Case, alpha ~= 1
         if logson == 0
             xshift = (x(x>zeta) - zeta).^(alpha/(alpha - 1));
             F( x > zeta ) = c1 + sign(1-alpha)/pi * ...
-             quadv(@(theta) exp(-xshift * V(theta)),-theta0+1e-10,pi/2-1e-10,tol);
+             integral(@(theta) exp(-xshift * V(theta)),-theta0+1e-10,pi/2-1e-10);
         else
             logXshift = (1+overAmin)*log((x(x>zeta) - zeta));
             logAll = @(theta) log(-1) + logV(theta) + logXshift;
@@ -158,8 +158,8 @@ elseif beta > 0                     % Gen. Case, alpha = 1, beta >0
                  ( oneoverb * (piover2 + beta *theta) .* tan(theta) );
     
     xterm = (-pi*x/(2*beta));
-    F = (1/pi)*quadv(@(theta) exp(-exp(xterm + logV(theta))),...
-                                            -pi/2+1e-12,pi/2-1e-12,tol);
+    F = (1/pi)*integral(@(theta) exp(-exp(xterm + logV(theta))),...
+                                            -pi/2+1e-12,pi/2-1e-12);
                                        
 
 else                           % alpha = 1, beta < 0 
