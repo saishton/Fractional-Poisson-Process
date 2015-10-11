@@ -66,10 +66,10 @@ else
 end
 
 % Warn if alpha is very close to 1 or 0
-if (1e-5 < abs(1 - alpha) && abs(1 - alpha) < .02) || alpha < .02
-    warning('stblcdf:ScaryAlpha',...
-        'Difficult to approximate cdf for alpha close to 0 or 1')
-end
+% if (1e-5 < abs(1 - alpha) && abs(1 - alpha) < .02) || alpha < .02
+%    warning('stblcdf:ScaryAlpha',...
+%        'Difficult to approximate cdf for alpha close to 0 or 1')
+% end
 
 %========= Compute CDF =============%
 
@@ -108,16 +108,35 @@ elseif abs(alpha - 1) > 1e-5         % Gen. Case, alpha ~= 1
     A2 = cos(A1)^(1/(alpha-1));
     exp1 = alpha/(alpha-1);
     alpham1 = alpha - 1;
-    V = @(theta) A2 * ( cos(theta) ./ sin( alpha*(theta + theta0) ) ).^exp1.*...
-        cos( A1 + alpham1*theta ) ./ cos(theta);
+    if abs(1 - alpha) < .02 || alpha < .02
+        logson = 1;
+        overAmin = 1/(alpha-1);
+        alphaThetas = @(theta) alpha*(theta+theta0);
+        logV = @(theta) overAmin*(log(cos(alpha*theta0)))+(alpha*overAmin)*...
+            (log(cos(theta))-log(sin(alphaThetas(theta))))+...
+            log(cos(alphaThetas(theta)-theta))-log(cos(theta));
+    else
+        logson = 0;
+        V = @(theta) A2 * ( cos(theta) ./ sin( alpha*(theta + theta0) ) ).^exp1.*...
+            cos( A1 + alpham1*theta ) ./ cos(theta);
+    end
     
     
     if any(x(:) > zeta)
-        xshift = (x(x>zeta) - zeta).^(alpha/(alpha - 1));
         % shave off end points of integral to avoid numerical instability
         % when calculating V
-        F( x > zeta ) = c1 + sign(1-alpha)/pi * ...
-           quadv(@(theta) exp(-xshift * V(theta)),-theta0+1e-10,pi/2-1e-10,tol);
+        if logson == 0
+            xshift = (x(x>zeta) - zeta).^(alpha/(alpha - 1));
+            F( x > zeta ) = c1 + sign(1-alpha)/pi * ...
+             integral(@(theta) exp(-xshift * V(theta)),-theta0+1e-10,pi/2-1e-10);
+        else
+            logXshift = (1+overAmin)*log((x(x>zeta) - zeta));
+            logAll = @(theta) log(-1) + logV(theta) + logXshift;
+            All = @(theta) exp(logAll(theta));
+            
+            F( x > zeta ) = c1 + sign(1-alpha)/pi * ...
+                integral(@(theta) exp(All(theta)),-theta0+1e-10,pi/2-1e-10);
+        end
     end
     
     if any(abs(x(:) - zeta) < 1e-8)
@@ -139,8 +158,8 @@ elseif beta > 0                     % Gen. Case, alpha = 1, beta >0
                  ( oneoverb * (piover2 + beta *theta) .* tan(theta) );
     
     xterm = (-pi*x/(2*beta));
-    F = (1/pi)*quadv(@(theta) exp(-exp(xterm + logV(theta))),...
-                                            -pi/2+1e-12,pi/2-1e-12,tol);
+    F = (1/pi)*integral(@(theta) exp(-exp(xterm + logV(theta))),...
+                                            -pi/2+1e-12,pi/2-1e-12);
                                        
 
 else                           % alpha = 1, beta < 0 
@@ -155,8 +174,3 @@ F = max(real(F),0); % in case of small imaginary or negative resutls from QUADV
              
              
 end
-
-
-
-
-
