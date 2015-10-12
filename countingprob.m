@@ -1,104 +1,70 @@
-% The distribution of the fractional Poisson process
+function [] = countingprob(t,beta,intstep)
+% Plots the distribution of the fractional Poisson process for given time
+% (t), index (beta) and integral step (intstep) and compares it to a Monte
+% Carlo simulation and a standard Poisson distribution.
 
-clear all
-close all
+if nargin < 2
+    error('countingprob:TooFewInputs','Requires at least two input arguments.');
+elseif nargin > 3
+    error('countingprob:TooManyInputs','Accepts at most three input arguments.');
+elseif isempty(intstep)
+    du = 0.01;
+elseif isscalar(intstep) && intstep>0
+    du = intstep;
+else
+    error('countingprob:BadInput','"du" must be a positive scalar.')
+end
 
 format long g
 
-beta=0.995; %index
-nu=1; %skewness
-% u=5;
-% gamma = (u*cos(pi*beta/2))^(1/beta); %scale parameter
-delta=0; %location parameter
+nu=1; %Skewness parameter
+delta=0; %Location parameter
 
-t=1; %time
-
-% Monte Carlo simulation
+%===Run a Monte Carlo simulation and build histogram===%
 
 gamma_t = 1;
-
 N=10000;
-
 num=zeros(1,N);
 
 parfor k=1:N
 dt=mlrnd(beta,gamma_t,1,100000);
-
 time=cumsum(dt);
-
-index=find(time>t);
-
-num(k)=min(index)-1;
-
+num(k)=find(time>t,1)-1;
 end
 
-%building the histogram
+BigN = max(num); %Number of events
 
-parfor j=1:max(num)
+parfor j=1:BigN
     freq(j)=length(find(num==j-1))/N;
 end
 
-% Analytical formula
+%===Estimate an analytical formula===%
 
-prob0 = mlf(beta,1,-t^beta,5); %probability for n=0
+prob0 = mlf(beta,1,-t^beta,5); %Probability for n=0
+prob = zeros(1,BigN-1); %Preallocate vector size for speed
+probpoiss = zeros(1,BigN-1); %Preallocate vector size for speed
 
-BigN = max(num)
-
-prob = zeros(1,BigN-1);
-probpoiss = zeros(1,BigN-1);
-
-for n=1:(BigN-1) %number of events
-    %   
-    % stable = stblcdf(t,beta,nu,gamma,delta);
-    % 
-    % plot(t,stable)
-
-    % fun = @(u) stblcdf(t,beta,nu,(u.*cos(pi*beta/2)).^(1/beta),delta)*(exp(-u).*u.^(n-1)/factorial(n-1) - exp(-u).*u.^n/factorial(n));
-    % prob = integral(fun,0.0001,Inf);
-    
-    du=0.01;
+for n=1:(BigN-1) 
     int=0;
-
-    % for i=0:100000
-    %     int= int + du*stblcdf(t,beta,nu,(i*du*cos(pi*beta/2))^(1/beta),delta)*(exp(-i*du)*(i*du)^(n-1)/factorial(n-1) - exp(-i*du)*(i*du)^n/factorial(n));
-    % end
-    
-    parfor i=0:100000
-        int= int + du*stblcdf(t,beta,nu,(i*du*cos(pi*beta/2))^(1/beta),delta)*exp(-i*du)*(i*du)^(n-1)/factorial(n-1)*((n-i*du)/n);
+    intSteps=round(1000/du)+1;
+    parfor i=0:intSteps
+        int=int+du*stblcdf(t,beta,nu,(i*du*cos(pi*beta/2))^(1/beta),delta)*...
+            exp(-i*du)*(i*du)^(n-1)/factorial(n-1)*((n-i*du)/n);
     end
-    
     prob(n)=int;
     probpoiss(n) = poisspdf(n,t);
 end
 
-prob=[prob0 prob];save
+prob=[prob0 prob];
 probpoiss=[poisspdf(0,t) probpoiss]; %Poisson for comparison
 
-% Plots
-x=0:(max(num)-1); %x axis
+%===Plot data & save to file===%
+x=0:(BigN-1);
 plot(x,prob,'o')
 hold on
 plot(x,probpoiss,'or')
 plot(x,freq,'x')
 
-
 filename = ['output-',datestr(now,'yyyymmddTHHMMSS'),'.png'];
 print(filename,'-dpng')
-
-% for i=1:1000
-% funct(i) = stblcdf(t,beta,nu,(i*du*cos(pi*beta/2))^(1/beta),delta)*(exp(-i*du)*(i*du)^(n-1)/factorial(n-1) - exp(-i*du)*(i*du)^n/factorial(n));
-% end
-% 
-% for i=1:1000
-%     funct2(i) = stblcdf(t,beta,nu,(i*du*cos(pi*beta/2))^(1/beta),delta);
-% end
-% 
-% for i=1:1000
-%     funct3(i) = (exp(-i*du)*(i*du)^(n-1)/factorial(n-1) - exp(-i*du)*(i*du)^n/factorial(n));
-% end
-
-% funct3 is the difference between two Poisson probabilities (lambda = 1)
-% 
-% for i=1:1000
-%     funct4(i) = poisspdf(n-1,i*du) - poisspdf(n,i*du);
-% end
+end
