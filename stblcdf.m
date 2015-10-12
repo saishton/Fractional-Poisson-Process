@@ -33,9 +33,6 @@ function F = stblcdf(x,alpha,beta,gam,delta,varargin)
 % [2] G Samorodnitsky, MS Taqqu (1994)
 %     "Stable non-Gaussian random processes: stochastic models with 
 %      infinite variance"  CRC Press
-%  
-%
-%
 
 if nargin < 5
     error('stblcdf:TooFewInputs','Requires at least five input arguments.'); 
@@ -64,12 +61,6 @@ elseif isscalar(varargin{1})
 else
     error('stblcdf:BadInput','"TOL" must be a scalar.')
 end
-
-% Warn if alpha is very close to 1 or 0
-% if (1e-5 < abs(1 - alpha) && abs(1 - alpha) < .02) || alpha < .02
-%    warning('stblcdf:ScaryAlpha',...
-%        'Difficult to approximate cdf for alpha close to 0 or 1')
-% end
 
 %========= Compute CDF =============%
 
@@ -167,10 +158,5 @@ else                           % alpha = 1, beta < 0
 end
 
 F = max(real(F),0); % in case of small imaginary or negative resutls from QUADV
-
-
-
-             
-             
-             
+        
 end
