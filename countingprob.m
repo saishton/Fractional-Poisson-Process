@@ -17,6 +17,8 @@ end
 
 format long g
 
+runStartTime = datestr(now,'yyyymmddTHHMMSS');
+
 nu=1; %Skewness parameter
 delta=0; %Location parameter
 
@@ -65,6 +67,8 @@ hold on
 plot(x,probpoiss,'or')
 plot(x,freq,'x')
 
-filename = ['output-',datestr(now,'yyyymmddTHHMMSS'),'.png'];
-print(filename,'-dpng')
+filename_image = ['graphical-',runStartTime,'.png'];
+filename_vars = ['variables-',runStartTime,'.mat'];
+print(filename_image,'-dpng')
+save(filename_vars)
 end
