@@ -15,9 +15,9 @@ else
     error('countingprob:BadInput','"du" must be a positive scalar.')
 end
 
+h = waitbar(0,'Initialising...');
 format long g
-
-runStartTime = datestr(now,'yyyymmddTHHMMSS');
+startTime = datestr(now,'yyyymmddTHHMMSS');
 
 nu=1; %Skewness parameter
 delta=0; %Location parameter
@@ -28,6 +28,7 @@ gamma_t = 1;
 N=10000;
 num=zeros(1,N);
 
+waitbar(0,h,'Simulating Data...')
 parfor k=1:N
 dt=mlrnd(beta,gamma_t,1,100000);
 time=cumsum(dt);
@@ -41,34 +42,66 @@ parfor j=1:BigN
 end
 
 %===Estimate an analytical formula===%
+prob=zeros(1,BigN); %Preallocate vector size for speed
+probpoiss=zeros(1,BigN); %Preallocate vector size for speed
+intSteps=round(1000/du)+1;
 
-prob0 = mlf(beta,1,-t^beta,5); %Probability for n=0
-prob = zeros(1,BigN-1); %Preallocate vector size for speed
-probpoiss = zeros(1,BigN-1); %Preallocate vector size for speed
+waitbar(0,h,'Calculating Analytical Estimates...')
 
-for n=1:(BigN-1) 
-    int=0;
-    intSteps=round(1000/du)+1;
+for n=0
+    prob(n+1)=mlf(beta,1,-t^beta,5);
+    progress=(n+1)/BigN;
+    waitbar(progress,h)
+end  
+
+for n=1
+    int=zeros(1,intSteps+1);
     parfor i=0:intSteps
-        int=int+du*stblcdf(t,beta,nu,(i*du*cos(pi*beta/2))^(1/beta),delta)*...
-            exp(-i*du)*(i*du)^(n-1)/factorial(n-1)*((n-i*du)/n);
+        stepu=i*du;
+        int(i+1)=du*stblcdf(t,beta,nu,(stepu*cos(pi*beta/2))^(1/beta),delta)*...
+            exp(-stepu)*(1-stepu);
     end
-    prob(n)=int;
-    probpoiss(n) = poisspdf(n,t);
+    prob(n+1)=sum(int);
+    progress=(n+1)/BigN;
+    waitbar(progress,h)
 end
 
-prob=[prob0 prob];
-probpoiss=[poisspdf(0,t) probpoiss]; %Poisson for comparison
+for n=2:(BigN-1)
+    int=zeros(1,intSteps+1);
+    log_noi=log(du)-log(factorial(n-1))-log(n);
+    parfor i=0:intSteps
+        stepu=i*du;
+        if stepu>1
+            logint=log(stblcdf(t,beta,nu,(stepu*cos(pi*beta/2))^(1/beta),delta))-...
+                stepu+(log(stepu)*(n-1))+log(n-stepu)+log_noi;
+            int(i+1)=real(exp(logint));
+        else
+            int(i+1)=du*stblcdf(t,beta,nu,(stepu*cos(pi*beta/2))^(1/beta),delta)*...
+                exp(-stepu)*(stepu)^(n-1)/factorial(n-1)*((n-stepu)/n);
+        end
+    end
+    prob(n+1)=sum(int);
+    progress=(n+1)/BigN;
+    waitbar(progress,h)
+end
+
+parfor n=0:(BigN-1) %Poisson for comparison
+    probpoiss(n+1)=poisspdf(n,t);
+end
 
 %===Plot data & save to file===%
+waitbar(1,h,'Saving Outputs...')
 x=0:(BigN-1);
-plot(x,prob,'o')
+figure()
 hold on
+plot(x,prob,'o')
 plot(x,probpoiss,'or')
 plot(x,freq,'x')
+hold off
 
-filename_image = ['graphical-',runStartTime,'.png'];
-filename_vars = ['variables-',runStartTime,'.mat'];
-print(filename_image,'-dpng')
-save(filename_vars)
+close(h)
+datafilename = [startTime,'-data.mat'];
+imagefilename = [startTime,'-img.png'];
+save(datafilename)
+print(imagefilename,'-dpng')
 end
