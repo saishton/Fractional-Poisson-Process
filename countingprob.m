@@ -68,10 +68,14 @@ end
 
 for n=2:(BigN-1)
     int=zeros(1,intSteps+1);
-    log_noi=log(du)-log(factorial(n-1))-log(n);
+    if n>150
+        log_noi=log(du)-(n-1)*(log(n-1)-1)-log(n);
+    else
+        log_noi=log(du)-log(factorial(n-1))-log(n);
+    end
     parfor i=0:intSteps
         stepu=i*du;
-        if stepu>1
+        if stepu>1 || n>150
             logint=log(stblcdf(t,beta,nu,(stepu*cos(pi*beta/2))^(1/beta),delta))-...
                 stepu+(log(stepu)*(n-1))+log(n-stepu)+log_noi;
             int(i+1)=real(exp(logint));
