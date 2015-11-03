@@ -101,6 +101,8 @@ hold on
 plot(x,prob,'o')
 plot(x,probpoiss,'or')
 plot(x,freq,'x')
+xlabel('Number of Links')
+ylabel('Probability')
 hold off
 
 close(h)
