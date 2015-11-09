@@ -1,9 +1,13 @@
-function [] = plotMLcomparison
+function [] = plotMLcomparison(input,structure)
+
+% input = 'journal.pone.0136497.s002.CSV';
+% structure = '%f %f %f %*s %*s';
+
+startTime = datestr(now,'yyyymmddTHHMMSS');
 
 %==CALCULATE CCDF FOR SAMPLE==%
-input = 'journal.pone.0136497.s002.CSV';
 fid = fopen(input);
-rawdata = textscan(fid,'%f %f %f %*s %*s','Delimiter',',');
+rawdata = textscan(fid,structure,'Delimiter',',');
 fclose(fid);
 
 data = cell2mat(rawdata);
@@ -96,4 +100,14 @@ set(gca,'YScale','log');
 axis([1E1,1E4,1E-5,1E0]);
 xlabel('Contact Time (s)');
 ylabel('CCDF');
-legend('Data','Exp','ML','Gen. Pareto')
+legend('Data','Exp','ML','Gen. Pareto');
+hold off
+
+datafilename = [startTime,'-data.mat'];
+imagefilename = [startTime,'-img.png'];
+videofilename = [startTime,'-vid.avi'];
+save(datafilename)
+print(imagefilename,'-dpng')
+close
+
+create_avi(data,videofilename);
