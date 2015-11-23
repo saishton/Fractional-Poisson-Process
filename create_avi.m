@@ -23,7 +23,7 @@ clustering = zeros(1,num_times);
 map(num_times) = struct('cdata',[],'colormap',[]);
 links(num_times) = struct('cdata',[],'colormap',[]);
 degdist(num_times) = struct('cdata',[],'colormap',[]);
-parfor m=1:num_times
+for m=1:num_times
     adj = zeros(num_people);
     current_time = (m-1)*contact_time;
     
@@ -58,12 +58,13 @@ parfor m=1:num_times
     close(map_fig);
     
 %LINKS
-    
+
     degdist_fig = figure();
-    histogram(sum(adj),'Normalization','cdf');
+    edges = -0.5:1:5.5;
+    histogram(sum(adj),edges,'Normalization','cdf');
     str = sprintf('Time: %d', current_time);
     text(0.1,0.1,str);
-    axis([-0.5 5.5 0.95 1]);
+    axis([-0.5 5.5 0.9 1]);
     ax = gca;
     ax.XTick = [0 1 2 3 4 5];
     xlabel('Degree');
