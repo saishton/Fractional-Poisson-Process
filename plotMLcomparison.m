@@ -4,7 +4,9 @@ function [] = plotMLcomparison(input,structure)
 % structure = '%f %f %f %*s %*s';
 
 startTime = datestr(now,'yyyymmddTHHMMSS');
-mkdir(startTime);
+clean_input = strrep(input, '.', '');
+dir_ref = [startTime,'_',clean_input];
+mkdir(dir_ref);
 
 %==CALCULATE CCDF FOR SAMPLE==%
 fid = fopen(input);
@@ -128,7 +130,7 @@ xlabel('Contact Time (s)');
 ylabel('CCDF');
 legend('Data','Exp','ML','Gen. Pareto','Weibull');
 hold off
-imagefilename = [startTime,'/plotMLcomparison-CCDF_fig-img.png'];
+imagefilename = [dir_ref,'/plotMLcomparison-CCDF_fig-img.png'];
 print(imagefilename,'-dpng')
 close(CCDF_fig);
 
@@ -136,12 +138,12 @@ AP_fig = figure();
 histogram(activityPot,'Normalization','cdf');
 xlabel('Activity Potential');
 ylabel('Cumulative Density');
-apfilename = [startTime,'/plotMLcomparison-AP_fig-img.png'];
+apfilename = [dir_ref,'/plotMLcomparison-AP_fig-img.png'];
 print(apfilename,'-dpng')
 close(AP_fig);
 
-datafilename = [startTime,'/plotMLcomparison-data.mat'];
+datafilename = [dir_ref,'/plotMLcomparison-data.mat'];
 save(datafilename)
 
-degreeleveldists(sorteddata,max_time,startTime);
-create_avi(data,startTime);
+degreeleveldists(sorteddata,max_time,dir_ref);
+create_avi(data,dir_ref);

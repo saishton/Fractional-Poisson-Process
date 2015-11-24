@@ -1,4 +1,4 @@
-function [] = degreeleveldists(data,max_time,startTime)
+function [] = degreeleveldists(data,max_time,dir_ref)
 
 all_people = [data(:,2)' data(:,3)'];
 uni_people = unique(all_people);
@@ -100,13 +100,13 @@ ylabel('CCDF');
 legend([p1 c1 c2 c3],{'Average at Deg. Level','ML','Gen. Pareto','Weibull'});
 hold off
 
-imagefilename = [startTime,'/degreeleveldists-img.png'];
+imagefilename = [dir_ref,'/degreeleveldists-img.png'];
 print(imagefilename,'-dpng')
 close
 
-datafilename = [startTime,'/degreeleveldists-data.mat'];
+datafilename = [dir_ref,'/degreeleveldists-data.mat'];
 save(datafilename)
 
 RN = randi([1 tot_people],1,1);
 randCCDF = CCDF(RN,:);
-randomDLD(startTime,X,randCCDF);
+randomDLD(dir_ref,X,randCCDF);

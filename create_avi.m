@@ -1,8 +1,8 @@
-function [] = create_avi(data,startTime)
+function [] = create_avi(data,dir_ref)
 
-mapfilename = [startTime,'/create_avi-map-vid.avi'];
-linksfilename = [startTime,'/create_avi-links-vid.avi'];
-degdistfilename = [startTime,'/create_avi-degdist-vid.avi'];
+mapfilename = [dir_ref,'/create_avi-map-vid.avi'];
+linksfilename = [dir_ref,'/create_avi-links-vid.avi'];
+degdistfilename = [dir_ref,'/create_avi-degdist-vid.avi'];
 
 contact_time = 20;
 close all
@@ -111,6 +111,6 @@ xlabel('Time (s)');
 ylabel('Clustering Coefficient');
 hold off
 
-imagefilename = [startTime,'/create_avi-GCC-img.png'];
+imagefilename = [dir_ref,'/create_avi-GCC-img.png'];
 print(imagefilename,'-dpng')
 close
