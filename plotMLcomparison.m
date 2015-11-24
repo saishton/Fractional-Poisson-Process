@@ -13,7 +13,9 @@ fclose(fid);
 
 data = cell2mat(rawdata);
 data(:,1) = data(:,1)-data(1,1);
-
+lowestID = min(min(data(:,2)),min(data(:,3)));
+data(:,2) = data(:,2)-lowestID+1;
+data(:,3) = data(:,3)-lowestID+1;
 number_rows = size(data,1);
 parfor i=1:number_rows
     thisrow = data(i,:);
@@ -35,9 +37,17 @@ sorteddata = partsorteddata(order,:);
 times = zeros(1,number_rows);
 j = 1;
 k = 1;
+numpeople = max(max(sorteddata(:,2)),max(sorteddata(:,3)));
+total_interactions = 0;
+interactions = zeros(1,numpeople);
+step_vector = [20 0 0];
 while j<number_rows+1
+    ID1 = sorteddata(j,2);
+    ID2 = sorteddata(j,3);
+    interactions(ID1) = interactions(ID1)+1;
+    interactions(ID2) = interactions(ID2)+1;
+    total_interactions = total_interactions+1;
     contact_time = 20;
-    step_vector = [20 0 0];
     current_row = sorteddata(j,:);
     if j == number_rows
         next_row = [0 0 0];
@@ -60,6 +70,7 @@ while j<number_rows+1
 end
 
 times(~times) = [];
+activityPot = interactions/total_interactions;
 
 [F,X] = ecdf(times);
 ccdf_data = 1-F;
@@ -85,8 +96,6 @@ ft_wb = fittype('wblcdf(x,a,b,''upper'')','options',fo_wb);
 cf_wb = fit(X,ccdf_data,ft_wb);
 cv_wb = coeffvalues(cf_wb);
 
-
-
 %==CALCULATE OTHER CCDFs==%
 tau = mean(times);
 ccdf_exp = exp(-X./tau);
@@ -105,7 +114,7 @@ b = cv_wb(2);
 ccdf_wb = wblcdf(X,a,b,'upper');
 
 %==PLOT CCDFs==%
-figure()
+CCDF_fig = figure();
 hold on
 plot(X,ccdf_data,'o')
 plot(X,ccdf_exp)
@@ -119,12 +128,20 @@ xlabel('Contact Time (s)');
 ylabel('CCDF');
 legend('Data','Exp','ML','Gen. Pareto','Weibull');
 hold off
+imagefilename = [startTime,'/plotMLcomparison-CCDF_fig-img.png'];
+print(imagefilename,'-dpng')
+close(CCDF_fig);
+
+AP_fig = figure();
+histogram(activityPot,'Normalization','cdf');
+xlabel('Activity Potential');
+ylabel('Cumulative Density');
+apfilename = [startTime,'/plotMLcomparison-AP_fig-img.png'];
+print(apfilename,'-dpng')
+close(AP_fig);
 
 datafilename = [startTime,'/plotMLcomparison-data.mat'];
-imagefilename = [startTime,'/plotMLcomparison-img.png'];
 save(datafilename)
-print(imagefilename,'-dpng')
-close
 
 degreeleveldists(sorteddata,max_time,startTime);
 create_avi(data,startTime);

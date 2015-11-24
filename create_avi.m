@@ -64,7 +64,7 @@ for m=1:num_times
     histogram(sum(adj),edges,'Normalization','cdf');
     str = sprintf('Time: %d', current_time);
     text(0.1,0.1,str);
-    axis([-0.5 5.5 0.9 1]);
+    axis([-0.5 5.5 0.75 1]);
     ax = gca;
     ax.XTick = [0 1 2 3 4 5];
     xlabel('Degree');
