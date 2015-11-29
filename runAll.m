@@ -1,0 +1,13 @@
+plotMLcomparison('journal.pone.0136497.s002.CSV','%f %f %f %*s %*s');
+plotMLcomparison('s12879-014-0695-9-s1-1A.csv','%f %f %f %*s %*s');
+plotMLcomparison('s12879-014-0695-9-s1-1B.csv','%f %f %f %*s %*s');
+plotMLcomparison('s12879-014-0695-9-s1-2A.csv','%f %f %f %*s %*s');
+plotMLcomparison('s12879-014-0695-9-s1-2B.csv','%f %f %f %*s %*s');
+plotMLcomparison('s12879-014-0695-9-s1-3A.csv','%f %f %f %*s %*s');
+plotMLcomparison('s12879-014-0695-9-s1-3B.csv','%f %f %f %*s %*s');
+plotMLcomparison('s12879-014-0695-9-s1-4A.csv','%f %f %f %*s %*s');
+plotMLcomparison('s12879-014-0695-9-s1-4B.csv','%f %f %f %*s %*s');
+plotMLcomparison('s12879-014-0695-9-s1-5A.csv','%f %f %f %*s %*s');
+plotMLcomparison('s12879-014-0695-9-s1-5B.csv','%f %f %f %*s %*s');
+plotMLcomparison('s12879-014-0695-9-s1-Teachers.csv','%f %f %f %*s %*s');
+plotMLcomparison('s12879-014-0695-9-s1.csv','%f %f %f %*s %*s');
