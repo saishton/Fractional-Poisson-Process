@@ -1,4 +1,4 @@
-function [] = degreeleveldists(data,max_time,dir_ref)
+function [] = degreeleveldists(data,max_time,dir_ref,fulltimes)
 
 all_people = [data(:,2)' data(:,3)'];
 uni_people = unique(all_people);
@@ -57,17 +57,17 @@ Y_average = mean(CCDF);
 %==BEST FIT CCDFs==%
 fo_ml = fitoptions('Method', 'NonlinearLeastSquares','Lower',[0 0],'Upper',[1 1],'StartPoint',[0.5 0.5]);
 ft_ml = fittype('mlf(beta,1,-gamma*x.^beta,6)','options',fo_ml);
-cf_ml = fit(X',Y_average',ft_ml);
+[cf_ml,gof_ml] = fit(X',Y_average',ft_ml);
 cv_ml = coeffvalues(cf_ml);
 
 fo_gp = fitoptions('Method', 'NonlinearLeastSquares','Lower',[-inf -inf 0],'StartPoint',[0.5 0.5 0.5]);
 ft_gp = fittype('gpcdf(x,k,sigma,theta,''upper'')','options',fo_gp);
-cf_gp = fit(X',Y_average',ft_gp);
+[cf_gp,gof_gp] = fit(X',Y_average',ft_gp);
 cv_gp = coeffvalues(cf_gp);
 
 fo_wb = fitoptions('Method', 'NonlinearLeastSquares','Lower',[0 0],'StartPoint',[0.5 0.5]);
 ft_wb = fittype('wblcdf(x,a,b,''upper'')','options',fo_wb);
-cf_wb = fit(X',Y_average',ft_wb);
+[cf_wb,gof_wb] = fit(X',Y_average',ft_wb);
 cv_wb = coeffvalues(cf_wb);
 
 %==CALCULATE CCDFs==%
@@ -84,8 +84,31 @@ a = cv_wb(1);
 b = cv_wb(2);
 ccdf_wb = wblcdf(X,a,b,'upper');
 
+%==GoF Tests==%
+dataMod = fulltimes(~ismember(fulltimes,Xrem));
+test_data = sort(dataMod)';
+
+z_ml = ones(length(test_data),1)-mlf(beta,1,-gamma*test_data.^beta,6);
+z_gp = gpcdf(test_data,k,sigma,theta);
+z_wb = wblcdf(test_data,a,b,);
+
+stats_ml = testStatistics(dataMod,z_ml);
+stats_gp = testStatistics(dataMod,z_gp);
+stats_wb = testStatistics(dataMod,z_wb);
+
+stats_ml.Chi_Squared = sum(rdivide((ccdf_data-ccdf_ml).^2,ccdf_ml));
+stats_gp.Chi_Squared = sum(rdivide((ccdf_data-ccdf_ml).^2,ccdf_gp));
+stats_wb.Chi_Squared = sum(rdivide((ccdf_data-ccdf_ml).^2,ccdf_wb));
+
+stats_ml.Root_MSE = gof_ml.rmse;
+stats_gp.Root_MSE = gof_gp.rmse;
+stats_wb.Root_MSE = gof_wb.rmse;
+stats_ml.R_Squared = gof_ml.rsquare;
+stats_gp.R_Squared = gof_gp.rsquare;
+stats_wb.R_Squared = gof_wb.rsquare;
+
 %==PLOT AND SAVE==%
-figure()
+DLD_fig = figure();
 hold on
 plot(X,CCDF,'o','MarkerEdgeColor',[0.8 0.8 0.8])
 p1 = plot(X,Y_average,'o');
@@ -102,10 +125,19 @@ hold off
 
 imagefilename = [dir_ref,'/degreeleveldists-img.png'];
 print(imagefilename,'-dpng')
-close
+close(DLD_fig);
+
+%==Create & Save Relevant Data==%
+fit_ml = struct('rsquared',gof_ml.rsquare);
+fit_gp = struct('rsquared',gof_gp.rsquare);
+fit_wb = struct('rsquared',gof_wb.rsquare);
+struc_gp = struct('shape',k,'scale',sigma,'location',theta);
+struc_ml = struct('stability',beta,'scale',gamma);
+struc_wb = struct('scale',a,'shape',b);
 
 datafilename = [dir_ref,'/degreeleveldists-data.mat'];
-save(datafilename)
+tosave = ['struc_gp','struc_ml','struc_wb','fit_gp','fit_ml','fit_wb'];
+save(datafilename,tosave)
 
 RN = randi([1 tot_people],1,1);
 randCCDF = CCDF(RN,:);
