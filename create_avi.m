@@ -61,8 +61,71 @@ for m=1:num_times
     numlinks(m) = adjsum/2;
     
     %==Degree Distribution Fitting==%
-    [F,X] = ecdf(sum(adj));
+    raw_data = sum(adj);
+    [F,X] = ecdf(raw_data);
     ccdf_data = 1-F;
+    
+    fo_ml = fitoptions('Method', 'NonlinearLeastSquares','Lower',[0 0],'Upper',[1 1],'StartPoint',[0.5 0.5]);
+    ft_ml = fittype('mlf(beta,1,-gamma*x.^beta,6)','options',fo_ml);
+    [cf_ml,gof_ml] = fit(X,ccdf_data,ft_ml);
+    cv_ml = coeffvalues(cf_ml);
+
+    fo_gp = fitoptions('Method', 'NonlinearLeastSquares','Lower',[-inf -inf 0],'StartPoint',[0.5 0.5 0.5]);
+    ft_gp = fittype('gpcdf(x,k,sigma,theta,''upper'')','options',fo_gp);
+    [cf_gp,gof_gp] = fit(X,ccdf_data,ft_gp);
+    cv_gp = coeffvalues(cf_gp);
+
+    fo_wb = fitoptions('Method', 'NonlinearLeastSquares','Lower',[0 0],'StartPoint',[0.5 0.5]);
+    ft_wb = fittype('wblcdf(x,a,b,''upper'')','options',fo_wb);
+    [cf_wb,gof_wb] = fit(X,ccdf_data,ft_wb);
+    cv_wb = coeffvalues(cf_wb);
+    
+    beta = cv_ml(1);
+    gamma = cv_ml(2);
+    ccdf_ml = mlf(beta,1,-gamma*X.^beta,6);
+
+    k = cv_gp(1);
+    sigma = cv_gp(2);
+    theta = cv_gp(3);
+    ccdf_gp = gpcdf(X,k,sigma,theta,'upper');
+
+    a = cv_wb(1);
+    b = cv_wb(2);
+    ccdf_wb = wblcdf(X,a,b,'upper');
+    
+    %==GoF Testing==%
+    test_data = sort(raw_data)';
+
+    z_ml = ones(length(test_data),1)-mlf(beta,1,-gamma*test_data.^beta,6);
+    z_gp = gpcdf(test_data,k,sigma,theta);
+    z_wb = wblcdf(test_data,a,b);
+
+    stats_ml = testStatistics(raw_data,z_ml);
+    stats_gp = testStatistics(raw_data,z_gp);
+    stats_wb = testStatistics(raw_data,z_wb);
+
+    stats_ml.Chi_Squared = sum(rdivide((ccdf_data-ccdf_ml).^2,ccdf_ml));
+    stats_gp.Chi_Squared = sum(rdivide((ccdf_data-ccdf_ml).^2,ccdf_gp));
+    stats_wb.Chi_Squared = sum(rdivide((ccdf_data-ccdf_ml).^2,ccdf_wb));
+
+    stats_ml.Root_MSE = gof_ml.rmse;
+    stats_gp.Root_MSE = gof_gp.rmse;
+    stats_wb.Root_MSE = gof_wb.rmse;
+    stats_ml.R_Squared = gof_ml.rsquare;
+    stats_gp.R_Squared = gof_gp.rsquare;
+    stats_wb.R_Squared = gof_wb.rsquare;
+    
+    %==Save to Structure==%
+    struc_ml = struct('Stability',beta,'Scale',gamma);
+    struc_gp = struct('Shape',k,'Scale',sigma,'Location',theta);
+    struc_wb = struct('Scale',a,'Shape',b);
+    
+    ML_vid(m).Parameters = struc_ml;
+    GP_vid(m).Parameters = struc_gp;
+    WB_vid(m).Parameters = struc_wb;
+    ML_vid(m).Statistics = stats_ml;
+    GP_vid(m).Statistics = stats_gp;
+    WB_vid(m).Statistics = stats_wb;
        
     %==Create Video Frames==%
     map_fig = figure();
@@ -106,11 +169,12 @@ for m=1:num_times
     set(gcf,'color','w');
     links(m) = getframe(links_fig);
     close(links_fig);
-
+    
     degdist_fig = figure();
     plot(X,ccdf_data,'o');
-
-    %%%STUFF!
+    plot(X,ccdf_ml);
+    plot(X,ccdf_gp);
+    plot(X,ccdf_wb);
     str = sprintf('Time: %d', current_time);
     text(0.1,0.1,str);
     axis([-1 6 0 1]);
@@ -118,6 +182,7 @@ for m=1:num_times
     ax.XTick = [0 1 2 3 4 5];
     xlabel('Degree');
     ylabel('CCDF');
+    legend('Data','ML','Gen. Pareto','Weibull');
     degdist(m) = getframe(degdist_fig);
     close(degdist_fig);
 end
