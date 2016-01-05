@@ -50,6 +50,7 @@ parfor i=1:tot_people
     end
 end
 
+Xrem = [X(end-9:end)];
 X = X(1:end-10);
 CCDF = CCDF(:,(1:end-10));
 Y_average = mean(CCDF);
@@ -90,15 +91,15 @@ test_data = sort(dataMod)';
 
 z_ml = ones(length(test_data),1)-mlf(beta,1,-gamma*test_data.^beta,6);
 z_gp = gpcdf(test_data,k,sigma,theta);
-z_wb = wblcdf(test_data,a,b,);
+z_wb = wblcdf(test_data,a,b);
 
-stats_ml = testStatistics(dataMod,z_ml);
-stats_gp = testStatistics(dataMod,z_gp);
-stats_wb = testStatistics(dataMod,z_wb);
+stats_ml = testStatistics(test_data,z_ml);
+stats_gp = testStatistics(test_data,z_gp);
+stats_wb = testStatistics(test_data,z_wb);
 
-stats_ml.Chi_Squared = sum(rdivide((ccdf_data-ccdf_ml).^2,ccdf_ml));
-stats_gp.Chi_Squared = sum(rdivide((ccdf_data-ccdf_ml).^2,ccdf_gp));
-stats_wb.Chi_Squared = sum(rdivide((ccdf_data-ccdf_ml).^2,ccdf_wb));
+stats_ml.Chi_Squared = sum(rdivide((Y_average-ccdf_ml').^2,ccdf_ml'));
+stats_gp.Chi_Squared = sum(rdivide((Y_average-ccdf_gp).^2,ccdf_gp));
+stats_wb.Chi_Squared = sum(rdivide((Y_average-ccdf_wb).^2,ccdf_wb));
 
 stats_ml.Root_MSE = gof_ml.rmse;
 stats_gp.Root_MSE = gof_gp.rmse;
@@ -128,16 +129,16 @@ print(imagefilename,'-dpng')
 close(DLD_fig);
 
 %==Create & Save Relevant Data==%
-fit_ml = struct('rsquared',gof_ml.rsquare);
-fit_gp = struct('rsquared',gof_gp.rsquare);
-fit_wb = struct('rsquared',gof_wb.rsquare);
-struc_gp = struct('shape',k,'scale',sigma,'location',theta);
-struc_ml = struct('stability',beta,'scale',gamma);
-struc_wb = struct('scale',a,'shape',b);
+struc_ml = struct('Stability',beta,'Scale',gamma);
+struc_gp = struct('Shape',k,'Scale',sigma,'Location',theta);
+struc_wb = struct('Scale',a,'Shape',b);
+
+ML = struct('Parameters',struc_ml,'Statistics',stats_ml);
+GP = struct('Parameters',struc_gp,'Statistics',stats_gp);
+WB = struct('Parameters',struc_wb,'Statistics',stats_wb);
 
 datafilename = [dir_ref,'/degreeleveldists-data.mat'];
-tosave = ['struc_gp','struc_ml','struc_wb','fit_gp','fit_ml','fit_wb'];
-save(datafilename,tosave)
+save(datafilename,'ML','GP','WB')
 
 RN = randi([1 tot_people],1,1);
 randCCDF = CCDF(RN,:);

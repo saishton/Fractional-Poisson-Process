@@ -19,117 +19,45 @@ parfor n=1:num_people
     coords(n,:) = scale*[sin(n*theta) cos(n*theta)];
 end
 
-node_freq = zeros(num_people,1);
-line_freq = zeros(num_people);
+step_nf = zeros(num_people,1);
+line_freq = zeros(num_people,num_people);
 clustering = zeros(1,num_times);
 numlinks = zeros(1,num_times);
-map(num_times) = struct('cdata',[],'colormap',[]);
+raw_data = zeros(num_times,num_people);
+
 links(num_times) = struct('cdata',[],'colormap',[]);
-degdist(num_times) = struct('cdata',[],'colormap',[]);
-ML_vid(num_times) = struct('Parameters',[],'Statistics',[]);
-GP_vid(num_times) = struct('Parameters',[],'Statistics',[]);
-WB_vid(num_times) = struct('Parameters',[],'Statistics',[]);
+map(num_times) = struct('cdata',[],'colormap',[]);
+
 for m=1:num_times
-    
-    adj = zeros(num_people);
+    thisadj = zeros(num_people);
     current_time = (m-1)*contact_time;
-    
-    %== Create adjacency matrix and extract clustering coefficient ==%
     for i=1:data_length
         test_time = data(i,1);
         if test_time==current_time
             person1 = data(i,2);
             person2 = data(i,3);
-            adj(person1,person2) = 1;
-            adj(person2,person1) = 1;
+            thisadj(person1,person2) = 1;
+            thisadj(person2,person1) = 1;
         end
     end
-    adj2 = adj^2;
-    adj3 = adj^3;
+    adj2 = thisadj^2;
+    adj3 = thisadj^3;
     adj2sum = sum(sum(adj2));
     contrip = adj2sum - trace(adj2);
     if contrip==0
         clustering(m) = 0;
     else
-        clustering(m) = trace(adj3)/(adj2sum - trace(adj2));
+        clustering(m) = trace(adj3)/contrip;
     end
-    node_freq = node_freq+sum(adj,2);
-    rel_node_freq = node_freq/max(node_freq);
-    line_freq = line_freq+adj;
-    rel_line_freq = line_freq/(max(max(line_freq)));
-    adjsum = sum(sum(adj));
+    step_nf = step_nf+sum(thisadj,2);
+    adjsum = sum(sum(thisadj));
     numlinks(m) = adjsum/2;
+    this_rd = sum(thisadj);
+    raw_data(m,:) = this_rd;
     
-    %==Degree Distribution Fitting==%
-    raw_data = sum(adj);
-    [F,X] = ecdf(raw_data);
-    ccdf_data = 1-F;
-    
-    fo_ml = fitoptions('Method', 'NonlinearLeastSquares','Lower',[0 0],'Upper',[1 1],'StartPoint',[0.5 0.5]);
-    ft_ml = fittype('mlf(beta,1,-gamma*x.^beta,6)','options',fo_ml);
-    [cf_ml,gof_ml] = fit(X,ccdf_data,ft_ml);
-    cv_ml = coeffvalues(cf_ml);
-
-    fo_gp = fitoptions('Method', 'NonlinearLeastSquares','Lower',[-inf -inf 0],'StartPoint',[0.5 0.5 0.5]);
-    ft_gp = fittype('gpcdf(x,k,sigma,theta,''upper'')','options',fo_gp);
-    [cf_gp,gof_gp] = fit(X,ccdf_data,ft_gp);
-    cv_gp = coeffvalues(cf_gp);
-
-    fo_wb = fitoptions('Method', 'NonlinearLeastSquares','Lower',[0 0],'StartPoint',[0.5 0.5]);
-    ft_wb = fittype('wblcdf(x,a,b,''upper'')','options',fo_wb);
-    [cf_wb,gof_wb] = fit(X,ccdf_data,ft_wb);
-    cv_wb = coeffvalues(cf_wb);
-    
-    beta = cv_ml(1);
-    gamma = cv_ml(2);
-    ccdf_ml = mlf(beta,1,-gamma*X.^beta,6);
-
-    k = cv_gp(1);
-    sigma = cv_gp(2);
-    theta = cv_gp(3);
-    ccdf_gp = gpcdf(X,k,sigma,theta,'upper');
-
-    a = cv_wb(1);
-    b = cv_wb(2);
-    ccdf_wb = wblcdf(X,a,b,'upper');
-    
-    %==GoF Testing==%
-    test_data = sort(raw_data)';
-
-    z_ml = ones(length(test_data),1)-mlf(beta,1,-gamma*test_data.^beta,6);
-    z_gp = gpcdf(test_data,k,sigma,theta);
-    z_wb = wblcdf(test_data,a,b);
-
-    stats_ml = testStatistics(raw_data,z_ml);
-    stats_gp = testStatistics(raw_data,z_gp);
-    stats_wb = testStatistics(raw_data,z_wb);
-
-    stats_ml.Chi_Squared = sum(rdivide((ccdf_data-ccdf_ml).^2,ccdf_ml));
-    stats_gp.Chi_Squared = sum(rdivide((ccdf_data-ccdf_ml).^2,ccdf_gp));
-    stats_wb.Chi_Squared = sum(rdivide((ccdf_data-ccdf_ml).^2,ccdf_wb));
-
-    stats_ml.Root_MSE = gof_ml.rmse;
-    stats_gp.Root_MSE = gof_gp.rmse;
-    stats_wb.Root_MSE = gof_wb.rmse;
-    stats_ml.R_Squared = gof_ml.rsquare;
-    stats_gp.R_Squared = gof_gp.rsquare;
-    stats_wb.R_Squared = gof_wb.rsquare;
-    
-    %==Save to Structure==%
-    struc_ml = struct('Stability',beta,'Scale',gamma);
-    struc_gp = struct('Shape',k,'Scale',sigma,'Location',theta);
-    struc_wb = struct('Scale',a,'Shape',b);
-    
-    ML_vid(m).Parameters = struc_ml;
-    GP_vid(m).Parameters = struc_gp;
-    WB_vid(m).Parameters = struc_wb;
-    ML_vid(m).Statistics = stats_ml;
-    GP_vid(m).Statistics = stats_gp;
-    WB_vid(m).Statistics = stats_wb;
-       
-    %==Create Video Frames==%
+    %==Create Adj Frame==%
     map_fig = figure();
-    gplot(adj,coords,'-*');
+    gplot(thisadj,coords,'-*');
     str = sprintf('Time: %d', current_time);
     text(0,-1.2*scale,str);
     axis([-1.5 1.5 -1.5 1.5]*scale);
@@ -137,18 +65,24 @@ for m=1:num_times
     set(gcf,'color','w');
     map(m) = getframe(map_fig);
     close(map_fig);
+    %==End Frame Creation==%
     
-    links_fig = figure();
-    link_size = rel_node_freq*50;
-    tempadj = logical(rel_line_freq);
+    this_rel_node_freq = step_nf/max(step_nf);
+	line_freq = line_freq+thisadj;
+    thisRLF = line_freq/(max(max(line_freq)));
+    
+    %==Create Activity Frame==%
+	links_fig = figure();
+    link_size = this_rel_node_freq*50;
+    tempadj = logical(thisRLF);
     [row,col] = find(tempadj);
     tempcoords = zeros(num_people,2);
     hold on
-    parfor i=1:length(row)
+    for i=1:length(row)
         thisrow = row(i);
         thiscol = col(i);
         if thisrow >= thiscol
-            line_col = (1-rel_line_freq(thisrow,thiscol))*[1 1 1];
+            line_col = (1-thisRLF(thisrow,thiscol))*[1 1 1];
             x1 = coords(thisrow,1);
             y1 = coords(thisrow,2);
             x2 = coords(thiscol,1);
@@ -169,12 +103,112 @@ for m=1:num_times
     set(gcf,'color','w');
     links(m) = getframe(links_fig);
     close(links_fig);
+end
+
+raw_data( :, ~any(raw_data,1) ) = [];
+highX = max(max(raw_data))+2;
+X = zeros(highX,num_times);
+ccdf_data = zeros(highX,num_times);
+amountPad = zeros(1,num_times);
+
+fo_ex = fitoptions('Method', 'NonlinearLeastSquares','Lower',[0],'Upper',[inf],'StartPoint',[1]);
+ft_ex = fittype('expcdf(x,lambda,''upper'')','options',fo_ex);
+fo_gm = fitoptions('Method', 'NonlinearLeastSquares','Lower',[0 0],'Upper',[inf inf],'StartPoint',[1 1]);
+ft_gm = fittype('gamcdf(x,a,b,''upper'')','options',fo_gm);
+fo_rl = fitoptions('Method', 'NonlinearLeastSquares','Lower',[0],'Upper',[inf],'StartPoint',[1]);
+ft_rl = fittype('raylcdf(x,sigma,''upper'')','options',fo_rl);
+
+lambda = zeros(1,num_times);
+a = zeros(1,num_times);
+b = zeros(1,num_times);
+sigma = zeros(1,num_times);
+
+EX_vid(num_times) = struct('Parameters',[],'Statistics',[]);
+GM_vid(num_times) = struct('Parameters',[],'Statistics',[]);
+RL_vid(num_times) = struct('Parameters',[],'Statistics',[]);
+
+parfor m=1:num_times
+    current_data = raw_data(m,:);
+    [thisF,thisX] = ecdf(current_data);
+    thisCCDF = 1-thisF;
     
+    %==Degree Distribution Fitting==%
+    [this_cf_ex,this_gof_ex] = fit(thisX,thisCCDF,ft_ex);
+    this_cv_ex = coeffvalues(this_cf_ex);
+    [this_cf_gm,this_gof_gm] = fit(thisX,thisCCDF,ft_gm);
+    this_cv_gm = coeffvalues(this_cf_gm);
+    [this_cf_rl,this_gof_rl] = fit(thisX,thisCCDF,ft_rl);
+    this_cv_rl = coeffvalues(this_cf_rl);
+    this_lambda = this_cv_ex(1);
+    this_a = this_cv_gm(1);
+    this_b = this_cv_gm(2);
+    this_sigma = this_cv_rl(1);
+    
+    %==GoF Tests==%
+    this_test_data = sort(current_data)';
+   
+    z_ex = expcdf(this_test_data,this_lambda);
+    z_gm = gamcdf(this_test_data,this_a,this_b);
+    z_rl = raylcdf(this_test_data,this_sigma);
+
+    stats_ex = testStatistics(this_test_data,z_ex);
+    stats_gm = testStatistics(this_test_data,z_gm);
+    stats_rl = testStatistics(this_test_data,z_rl);
+
+    stats_ex.Root_MSE = this_gof_ex.rmse;
+    stats_gm.Root_MSE = this_gof_gm.rmse;
+    stats_rl.Root_MSE = this_gof_rl.rmse;
+    stats_ex.R_Squared = this_gof_ex.rsquare;
+    stats_gm.R_Squared = this_gof_gm.rsquare;
+    stats_rl.R_Squared = this_gof_rl.rsquare;
+    
+    %==Save to Structure==%
+    struc_ex = struct('Rate',this_lambda);
+    struc_gm = struct('Shape',this_a,'Scale',this_b);
+    struc_rl = struct('Scale',this_sigma);
+    
+    EX_vid(m).Parameters = struc_ex;
+    GM_vid(m).Parameters = struc_gm;
+    RL_vid(m).Parameters = struc_rl;
+    EX_vid(m).Statistics = stats_ex;
+    GM_vid(m).Statistics = stats_gm;
+    RL_vid(m).Statistics = stats_rl;
+    
+    amountPad(m) = highX - length(thisX);
+    thisCCDF_p = zeros(highX,1);
+    thisCCDF_p(1:length(thisCCDF),1) = thisCCDF;
+    thisX_p = zeros(highX,1);
+    thisX_p(1:length(thisX),1) = thisX;
+    X(:,m) = thisX_p;
+    ccdf_data(:,m) = thisCCDF_p;
+    lambda(m) = this_lambda;
+    a(m) = this_a;
+    b(m) = this_b;
+    sigma(m) = this_sigma;
+end
+
+degdist(num_times) = struct('cdata',[],'colormap',[]);
+
+for m=1:num_times
+    current_time = (m-1)*contact_time;
+    padding = amountPad(m);
+    thisX_p = X(:,m);
+    thisCCDF_p = ccdf_data(:,m);
+    thisX = thisX_p(1:end-padding);
+    thisCCDF = thisCCDF_p(1:end-padding);
+    
+    %==BEST FIT CCDFs==%
+    ccdf_ex = expcdf(thisX,lambda(m),'upper');
+    ccdf_gm = gamcdf(thisX,a(m),b(m),'upper');
+    ccdf_rl = raylcdf(thisX,sigma(m),'upper');
+       
+    %==Create Video Frames==%
     degdist_fig = figure();
-    plot(X,ccdf_data,'o');
-    plot(X,ccdf_ml);
-    plot(X,ccdf_gp);
-    plot(X,ccdf_wb);
+    hold on
+    plot(thisX,thisCCDF,'o')
+    plot(thisX,ccdf_ex)
+    plot(thisX,ccdf_gm)
+    plot(thisX,ccdf_rl)
     str = sprintf('Time: %d', current_time);
     text(0.1,0.1,str);
     axis([-1 6 0 1]);
@@ -182,7 +216,8 @@ for m=1:num_times
     ax.XTick = [0 1 2 3 4 5];
     xlabel('Degree');
     ylabel('CCDF');
-    legend('Data','ML','Gen. Pareto','Weibull');
+    legend('Data','Exp','Gamma','Rayleigh');
+    hold off
     degdist(m) = getframe(degdist_fig);
     close(degdist_fig);
 end
@@ -232,57 +267,57 @@ close(clusteringfig);
 [F_links,X_links] = ecdf(numlinks);
 ccdf_links = 1-F_links;
 
-fo_ex = fitoptions('Method', 'NonlinearLeastSquares','Lower',[0],'Upper',[inf],'StartPoint',[1]);
-ft_ex = fittype('expcdf(x,lambda,''upper'')','options',fo_ex);
-[cf_ex,gof_ex] = fit(X_links,ccdf_links,ft_ex);
-cv_ex = coeffvalues(cf_ex);
+links_fo_ex = fitoptions('Method', 'NonlinearLeastSquares','Lower',[0],'Upper',[inf],'StartPoint',[1]);
+links_ft_ex = fittype('expcdf(x,lambda,''upper'')','options',links_fo_ex);
+[links_cf_ex,links_gof_ex] = fit(X_links,ccdf_links,links_ft_ex);
+links_cv_ex = coeffvalues(links_cf_ex);
 
-fo_gm = fitoptions('Method', 'NonlinearLeastSquares','Lower',[0 0],'Upper',[inf inf],'StartPoint',[1 1]);
-ft_gm = fittype('gamcdf(x,a,b,''upper'')','options',fo_gm);
-[cf_gm,gof_gm] = fit(X_links,ccdf_links,ft_gm);
-cv_gm = coeffvalues(cf_gm);
+links_fo_gm = fitoptions('Method', 'NonlinearLeastSquares','Lower',[0 0],'Upper',[inf inf],'StartPoint',[1 1]);
+links_ft_gm = fittype('gamcdf(x,a,b,''upper'')','options',links_fo_gm);
+[links_cf_gm,links_gof_gm] = fit(X_links,ccdf_links,links_ft_gm);
+links_cv_gm = coeffvalues(links_cf_gm);
 
-fo_rl = fitoptions('Method', 'NonlinearLeastSquares','Lower',[0],'Upper',[inf],'StartPoint',[1]);
-ft_rl = fittype('raylcdf(x,sigma,''upper'')','options',fo_rl);
-[cf_rl,gof_rl] = fit(X_links,ccdf_links,ft_rl);
-cv_rl = coeffvalues(cf_rl);
+links_fo_rl = fitoptions('Method', 'NonlinearLeastSquares','Lower',[0],'Upper',[inf],'StartPoint',[1]);
+links_ft_rl = fittype('raylcdf(x,sigma,''upper'')','options',links_fo_rl);
+[links_cf_rl,links_gof_rl] = fit(X_links,ccdf_links,links_ft_rl);
+links_cv_rl = coeffvalues(links_cf_rl);
 
 %==BEST FIT CCDFs==%
-lambda = cv_ex(1);
-ccdf_ex = expcdf(X_links,lambda,'upper');
+links_lambda = links_cv_ex(1);
+links_ccdf_ex = expcdf(X_links,links_lambda,'upper');
 
-a = cv_gm(1);
-b = cv_gm(2);
-ccdf_gm = gamcdf(X,a,b,'upper');
+links_a = links_cv_gm(1);
+links_b = links_cv_gm(2);
+links_ccdf_gm = gamcdf(X_links,links_a,links_b,'upper');
 
-sigma = cv_rl(1);
-ccdf_rl = raylcdf(x,sigma,'upper');
+links_sigma = links_cv_rl(1);
+links_ccdf_rl = raylcdf(X_links,links_sigma,'upper');
 
 %==GoF Testing==%
-test_data = sort(numlinks)';
+links_test_data = sort(numlinks)';
 
-z_ex = expcdf(test_data,lambda);
-z_gm = gamcdf(test_data,a,b);
-z_rl = raylcdf(test_data,sigma);
+links_z_ex = expcdf(links_test_data,links_lambda);
+links_z_gm = gamcdf(links_test_data,links_a,links_b);
+links_z_rl = raylcdf(links_test_data,links_sigma);
 
-stats_ex = testStatistics(numlinks,z_ex);
-stats_gm = testStatistics(numlinks,z_gm);
-stats_rl = testStatistics(numlinks,z_rl);
+links_stats_ex = testStatistics(links_test_data,links_z_ex);
+links_stats_gm = testStatistics(links_test_data,links_z_gm);
+links_stats_rl = testStatistics(links_test_data,links_z_rl);
 
-stats_ex.Root_MSE = gof_ex.rmse;
-stats_gm.Root_MSE = gof_gm.rmse;
-stats_rl.Root_MSE = gof_rl.rmse;
-stats_ex.R_Squared = gof_ex.rsquare;
-stats_gm.R_Squared = gof_gm.rsquare;
-stats_rl.R_Squared = gof_rl.rsquare;
+links_stats_ex.Root_MSE = links_gof_ex.rmse;
+links_stats_gm.Root_MSE = links_gof_gm.rmse;
+links_stats_rl.Root_MSE = links_gof_rl.rmse;
+links_stats_ex.R_Squared = links_gof_ex.rsquare;
+links_stats_gm.R_Squared = links_gof_gm.rsquare;
+links_stats_rl.R_Squared = links_gof_rl.rsquare;
 
 %==Plotting==%
 linksactivefig = figure();
 hold on
 plot(X_links,ccdf_links,'o');
-plot(X_links,ccdf_ex);
-plot(X_links,ccdf_gm);
-plot(X_links,ccdf_rl);
+plot(X_links,links_ccdf_ex);
+plot(X_links,links_ccdf_gm);
+plot(X_links,links_ccdf_rl);
 xlabel('Number of Active Links');
 ylabel('CCDF');
 legend('Data','Exp','Gamma','Rayleigh');
@@ -291,13 +326,13 @@ print(imagefilename,'-dpng')
 close(linksactivefig);
 
 %==Save Relevant Data==%
-struc_ex = struct('Rate',lambda);
-struc_gm = struct('Shape',a,'Scale',b);
-struc_rl = struct('Scale',sigma);
+links_struc_ex = struct('Rate',links_lambda);
+links_struc_gm = struct('Shape',links_a,'Scale',links_b);
+links_struc_rl = struct('Scale',links_sigma);
 
-EX = struct('Parameters',struc_ex,'Statistics',stats_ml);
-GM = struct('Parameters',struc_gm,'Statistics',stats_gm);
-RL = struct('Parameters',struc_rl,'Statistics',stats_rl);
+EX = struct('Parameters',links_struc_ex,'Statistics',links_stats_ml);
+GM = struct('Parameters',links_struc_gm,'Statistics',links_stats_gm);
+RL = struct('Parameters',links_struc_rl,'Statistics',links_stats_rl);
 
 datafilename = [dir_ref,'/create_avi-data.mat'];
-save(datafilename,'ML_vid','GP_vid','WB_vid''EX','GM','RL')
+save(datafilename,'EX_vid','GM_vid','RL_vid','EX','GM','RL')
