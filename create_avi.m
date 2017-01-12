@@ -25,8 +25,8 @@ clustering = zeros(1,num_times);
 numlinks = zeros(1,num_times);
 raw_data = zeros(num_times,num_people);
 
-links(num_times) = struct('cdata',[],'colormap',[]);
-map(num_times) = struct('cdata',[],'colormap',[]);
+% links(num_times) = struct('cdata',[],'colormap',[]);
+% map(num_times) = struct('cdata',[],'colormap',[]);
 
 for m=1:num_times
     thisadj = zeros(num_people);
@@ -55,54 +55,54 @@ for m=1:num_times
     this_rd = sum(thisadj);
     raw_data(m,:) = this_rd;
     
-    %==Create Adj Frame==%
-    map_fig = figure();
-    gplot(thisadj,coords,'-*');
-    str = sprintf('Time: %d', current_time);
-    text(0,-1.2*scale,str);
-    axis([-1.5 1.5 -1.5 1.5]*scale);
-    axis off;
-    set(gcf,'color','w');
-    map(m) = getframe(map_fig);
-    close(map_fig);
-    %==End Frame Creation==%
+%     %==Create Adj Frame==%
+%     map_fig = figure();
+%     gplot(thisadj,coords,'-*');
+%     str = sprintf('Time: %d', current_time);
+%     text(0,-1.2*scale,str);
+%     axis([-1.5 1.5 -1.5 1.5]*scale);
+%     axis off;
+%     set(gcf,'color','w');
+%     map(m) = getframe(map_fig);
+%     close(map_fig);
+%     %==End Frame Creation==%
     
-    this_rel_node_freq = step_nf/max(step_nf);
-	line_freq = line_freq+thisadj;
-    thisRLF = line_freq/(max(max(line_freq)));
+%     this_rel_node_freq = step_nf/max(step_nf);
+% 	line_freq = line_freq+thisadj;
+%     thisRLF = line_freq/(max(max(line_freq)));
     
-    %==Create Activity Frame==%
-	links_fig = figure();
-    link_size = this_rel_node_freq*50;
-    tempadj = logical(thisRLF);
-    [row,col] = find(tempadj);
-    tempcoords = zeros(num_people,2);
-    hold on
-    for i=1:length(row)
-        thisrow = row(i);
-        thiscol = col(i);
-        if thisrow >= thiscol
-            line_col = (1-thisRLF(thisrow,thiscol))*[1 1 1];
-            x1 = coords(thisrow,1);
-            y1 = coords(thisrow,2);
-            x2 = coords(thiscol,1);
-            y2 = coords(thiscol,2);
-            line([x1 x2],[y1 y2],'Color',line_col)
-        end
-        tempcoords(i,:) = coords(thisrow,:);
-    end
-    tempcoords = tempcoords(any(tempcoords,2),:);
-    tempcoords = unique(tempcoords,'rows','stable');
-    link_size(link_size==0) = [];
-    scatter(tempcoords(:,1),tempcoords(:,2),link_size,'filled')
-    hold off
-    str = sprintf('Time: %d', current_time);
-    text(0,-1.2*scale,str);
-    axis([-1.5 1.5 -1.5 1.5]*scale);
-    axis off;
-    set(gcf,'color','w');
-    links(m) = getframe(links_fig);
-    close(links_fig);
+%     %==Create Activity Frame==%
+% 	links_fig = figure();
+%     link_size = this_rel_node_freq*50;
+%     tempadj = logical(thisRLF);
+%     [row,col] = find(tempadj);
+%     tempcoords = zeros(num_people,2);
+%     hold on
+%     for i=1:length(row)
+%         thisrow = row(i);
+%         thiscol = col(i);
+%         if thisrow >= thiscol
+%             line_col = (1-thisRLF(thisrow,thiscol))*[1 1 1];
+%             x1 = coords(thisrow,1);
+%             y1 = coords(thisrow,2);
+%             x2 = coords(thiscol,1);
+%             y2 = coords(thiscol,2);
+%             line([x1 x2],[y1 y2],'Color',line_col)
+%         end
+%         tempcoords(i,:) = coords(thisrow,:);
+%     end
+%     tempcoords = tempcoords(any(tempcoords,2),:);
+%     tempcoords = unique(tempcoords,'rows','stable');
+%     link_size(link_size==0) = [];
+%     scatter(tempcoords(:,1),tempcoords(:,2),link_size,'filled')
+%     hold off
+%     str = sprintf('Time: %d', current_time);
+%     text(0,-1.2*scale,str);
+%     axis([-1.5 1.5 -1.5 1.5]*scale);
+%     axis off;
+%     set(gcf,'color','w');
+%     links(m) = getframe(links_fig);
+%     close(links_fig);
 end
 
 raw_data( :, ~any(raw_data,1) ) = [];
@@ -123,119 +123,119 @@ a = zeros(1,num_times);
 b = zeros(1,num_times);
 sigma = zeros(1,num_times);
 
-EX_vid(num_times) = struct('Parameters',[],'Statistics',[]);
-GM_vid(num_times) = struct('Parameters',[],'Statistics',[]);
-RL_vid(num_times) = struct('Parameters',[],'Statistics',[]);
+% EX_vid(num_times) = struct('Parameters',[],'Statistics',[]);
+% GM_vid(num_times) = struct('Parameters',[],'Statistics',[]);
+% RL_vid(num_times) = struct('Parameters',[],'Statistics',[]);
 
 parfor m=1:num_times
-    current_data = raw_data(m,:);
-    [thisF,thisX] = ecdf(current_data);
-    thisCCDF = 1-thisF;
+%     current_data = raw_data(m,:);
+%     [thisF,thisX] = ecdf(current_data);
+%     thisCCDF = 1-thisF;
     
-    %==Degree Distribution Fitting==%
-    [this_cf_ex,this_gof_ex] = fit(thisX,thisCCDF,ft_ex);
-    this_cv_ex = coeffvalues(this_cf_ex);
-    [this_cf_gm,this_gof_gm] = fit(thisX,thisCCDF,ft_gm);
-    this_cv_gm = coeffvalues(this_cf_gm);
-    [this_cf_rl,this_gof_rl] = fit(thisX,thisCCDF,ft_rl);
-    this_cv_rl = coeffvalues(this_cf_rl);
-    this_lambda = this_cv_ex(1);
-    this_a = this_cv_gm(1);
-    this_b = this_cv_gm(2);
-    this_sigma = this_cv_rl(1);
+%     %==Degree Distribution Fitting==%
+%     [this_cf_ex,this_gof_ex] = fit(thisX,thisCCDF,ft_ex);
+%     this_cv_ex = coeffvalues(this_cf_ex);
+%     [this_cf_gm,this_gof_gm] = fit(thisX,thisCCDF,ft_gm);
+%     this_cv_gm = coeffvalues(this_cf_gm);
+%     [this_cf_rl,this_gof_rl] = fit(thisX,thisCCDF,ft_rl);
+%     this_cv_rl = coeffvalues(this_cf_rl);
+%     this_lambda = this_cv_ex(1);
+%     this_a = this_cv_gm(1);
+%     this_b = this_cv_gm(2);
+%     this_sigma = this_cv_rl(1);
     
-    %==GoF Tests==%
-    this_test_data = sort(current_data)';
-   
-    z_ex = expcdf(this_test_data,this_lambda);
-    z_gm = gamcdf(this_test_data,this_a,this_b);
-    z_rl = raylcdf(this_test_data,this_sigma);
-
-    stats_ex = testStatistics(this_test_data,z_ex);
-    stats_gm = testStatistics(this_test_data,z_gm);
-    stats_rl = testStatistics(this_test_data,z_rl);
-
-    stats_ex.Root_MSE = this_gof_ex.rmse;
-    stats_gm.Root_MSE = this_gof_gm.rmse;
-    stats_rl.Root_MSE = this_gof_rl.rmse;
-    stats_ex.R_Squared = this_gof_ex.rsquare;
-    stats_gm.R_Squared = this_gof_gm.rsquare;
-    stats_rl.R_Squared = this_gof_rl.rsquare;
+%     %==GoF Tests==%
+%     this_test_data = sort(current_data)';
+%    
+%     z_ex = expcdf(this_test_data,this_lambda);
+%     z_gm = gamcdf(this_test_data,this_a,this_b);
+%     z_rl = raylcdf(this_test_data,this_sigma);
+% 
+%     stats_ex = testStatistics(this_test_data,z_ex);
+%     stats_gm = testStatistics(this_test_data,z_gm);
+%     stats_rl = testStatistics(this_test_data,z_rl);
+% 
+%     stats_ex.Root_MSE = this_gof_ex.rmse;
+%     stats_gm.Root_MSE = this_gof_gm.rmse;
+%     stats_rl.Root_MSE = this_gof_rl.rmse;
+%     stats_ex.R_Squared = this_gof_ex.rsquare;
+%     stats_gm.R_Squared = this_gof_gm.rsquare;
+%     stats_rl.R_Squared = this_gof_rl.rsquare;
     
-    %==Save to Structure==%
-    struc_ex = struct('Rate',this_lambda);
-    struc_gm = struct('Shape',this_a,'Scale',this_b);
-    struc_rl = struct('Scale',this_sigma);
+%     %==Save to Structure==%
+%     struc_ex = struct('Rate',this_lambda);
+%     struc_gm = struct('Shape',this_a,'Scale',this_b);
+%     struc_rl = struct('Scale',this_sigma);
+%     
+%     EX_vid(m).Parameters = struc_ex;
+%     GM_vid(m).Parameters = struc_gm;
+%     RL_vid(m).Parameters = struc_rl;
+%     EX_vid(m).Statistics = stats_ex;
+%     GM_vid(m).Statistics = stats_gm;
+%     RL_vid(m).Statistics = stats_rl;
     
-    EX_vid(m).Parameters = struc_ex;
-    GM_vid(m).Parameters = struc_gm;
-    RL_vid(m).Parameters = struc_rl;
-    EX_vid(m).Statistics = stats_ex;
-    GM_vid(m).Statistics = stats_gm;
-    RL_vid(m).Statistics = stats_rl;
-    
-    amountPad(m) = highX - length(thisX);
-    thisCCDF_p = zeros(highX,1);
-    thisCCDF_p(1:length(thisCCDF),1) = thisCCDF;
-    thisX_p = zeros(highX,1);
-    thisX_p(1:length(thisX),1) = thisX;
-    X(:,m) = thisX_p;
-    ccdf_data(:,m) = thisCCDF_p;
-    lambda(m) = this_lambda;
-    a(m) = this_a;
-    b(m) = this_b;
-    sigma(m) = this_sigma;
+%     amountPad(m) = highX - length(thisX);
+%     thisCCDF_p = zeros(highX,1);
+%     thisCCDF_p(1:length(thisCCDF),1) = thisCCDF;
+%     thisX_p = zeros(highX,1);
+%     thisX_p(1:length(thisX),1) = thisX;
+%     X(:,m) = thisX_p;
+%     ccdf_data(:,m) = thisCCDF_p;
+%     lambda(m) = this_lambda;
+%     a(m) = this_a;
+%     b(m) = this_b;
+%     sigma(m) = this_sigma;
 end
 
-degdist(num_times) = struct('cdata',[],'colormap',[]);
+% degdist(num_times) = struct('cdata',[],'colormap',[]);
 
 for m=1:num_times
-    current_time = (m-1)*contact_time;
-    padding = amountPad(m);
-    thisX_p = X(:,m);
-    thisCCDF_p = ccdf_data(:,m);
-    thisX = thisX_p(1:end-padding);
-    thisCCDF = thisCCDF_p(1:end-padding);
+%     current_time = (m-1)*contact_time;
+%     padding = amountPad(m);
+%     thisX_p = X(:,m);
+%     thisCCDF_p = ccdf_data(:,m);
+%     thisX = thisX_p(1:end-padding);
+%     thisCCDF = thisCCDF_p(1:end-padding);
     
-    %==BEST FIT CCDFs==%
-    ccdf_ex = expcdf(thisX,lambda(m),'upper');
-    ccdf_gm = gamcdf(thisX,a(m),b(m),'upper');
-    ccdf_rl = raylcdf(thisX,sigma(m),'upper');
+%     %==BEST FIT CCDFs==%
+%     ccdf_ex = expcdf(thisX,lambda(m),'upper');
+%     ccdf_gm = gamcdf(thisX,a(m),b(m),'upper');
+%     ccdf_rl = raylcdf(thisX,sigma(m),'upper');
        
-    %==Create Video Frames==%
-    degdist_fig = figure();
-    hold on
-    plot(thisX,thisCCDF,'o')
-    plot(thisX,ccdf_ex)
-    plot(thisX,ccdf_gm)
-    plot(thisX,ccdf_rl)
-    str = sprintf('Time: %d', current_time);
-    text(0.1,0.1,str);
-    axis([-1 6 0 1]);
-    ax = gca;
-    ax.XTick = [0 1 2 3 4 5];
-    xlabel('Degree');
-    ylabel('CCDF');
-    legend('Data','Exp','Gamma','Rayleigh');
-    hold off
-    degdist(m) = getframe(degdist_fig);
-    close(degdist_fig);
+%     %==Create Video Frames==%
+%     degdist_fig = figure();
+%     hold on
+%     plot(thisX,thisCCDF,'o')
+%     plot(thisX,ccdf_ex)
+%     plot(thisX,ccdf_gm)
+%     plot(thisX,ccdf_rl)
+%     str = sprintf('Time: %d', current_time);
+%     text(0.1,0.1,str);
+%     axis([-1 6 0 1]);
+%     ax = gca;
+%     ax.XTick = [0 1 2 3 4 5];
+%     xlabel('Degree');
+%     ylabel('CCDF');
+%     legend('Data','Exp','Gamma','Rayleigh');
+%     hold off
+%     degdist(m) = getframe(degdist_fig);
+%     close(degdist_fig);
 end
 
-v = VideoWriter(mapfilename);
-open(v)
-writeVideo(v,map)
-close(v)
-
-v = VideoWriter(linksfilename);
-open(v)
-writeVideo(v,links)
-close(v)
-
-v = VideoWriter(degdistfilename);
-open(v)
-writeVideo(v,degdist)
-close(v)
+% v = VideoWriter(mapfilename);
+% open(v)
+% writeVideo(v,map)
+% close(v)
+% 
+% v = VideoWriter(linksfilename);
+% open(v)
+% writeVideo(v,links)
+% close(v)
+% 
+% v = VideoWriter(degdistfilename);
+% open(v)
+% writeVideo(v,degdist)
+% close(v)
 
 %==Plot clustering data==%
 maxTime = (num_times-1)*contact_time;
@@ -330,9 +330,10 @@ links_struc_ex = struct('Rate',links_lambda);
 links_struc_gm = struct('Shape',links_a,'Scale',links_b);
 links_struc_rl = struct('Scale',links_sigma);
 
-EX = struct('Parameters',links_struc_ex,'Statistics',links_stats_ml);
+EX = struct('Parameters',links_struc_ex,'Statistics',links_stats_ex);
 GM = struct('Parameters',links_struc_gm,'Statistics',links_stats_gm);
 RL = struct('Parameters',links_struc_rl,'Statistics',links_stats_rl);
 
 datafilename = [dir_ref,'/create_avi-data.mat'];
-save(datafilename,'EX_vid','GM_vid','RL_vid','EX','GM','RL')
+%save(datafilename,'EX_vid','GM_vid','RL_vid','EX','GM','RL')
+save(datafilename,'EX','GM','RL')

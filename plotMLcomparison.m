@@ -11,7 +11,7 @@ clean_input = strrep(input_filename, '.', '');
 dir_ref = [oF,'\',startTime,'_',clean_input];
 mkdir(dir_ref);
 
-input = ['../',iF,'/',input_filename];
+input = [iF,'/',input_filename];
 
 %==CALCULATE CCDF FOR SAMPLE==%
 fid = fopen(input);
@@ -234,7 +234,7 @@ struc_ex = struct('Rate',lambda1);
 struc_gm = struct('Shape',a1,'Scale',b1);
 struc_rl = struct('Scale',sigma1);
 
-EX = struct('Parameters',struc_ex,'Statistics',stats_ml);
+EX = struct('Parameters',struc_ex,'Statistics',stats_ex);
 GM = struct('Parameters',struc_gm,'Statistics',stats_gm);
 RL = struct('Parameters',struc_rl,'Statistics',stats_rl);
 ML = struct('Parameters',struc_ml,'Statistics',stats_ml);
